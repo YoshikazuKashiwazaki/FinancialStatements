@@ -1,0 +1,42 @@
+#!/bin/bash
+tmp=/tmp/$$
+set -o pipefail
+trap 'rm -f $tmp-*' EXIT
+
+title="$1"
+denpyoudir=$(dirname $0)/../FY2018/DENPYOU
+reportdir=$(dirname $0)/../FY2018/REPORT
+
+grep -E "[0-9]{8}" $denpyoudir/* |
+sed 's/^.*://g'                |
+tr "\t" " "                    |
+sort -k2,2                     |
+sm2 2 2 3 3     > $tmp-total
+
+grep -E "[0-9]{8}" $denpyoudir/* |
+sed 's/^.*://g'                |
+tr "\t" " "                    |
+sort -k4,4                     |
+sm2 4 4 5 5     >> $tmp-total
+
+cat $tmp-total > $reportdir/tmp-total.tsv
+cat $tmp-total                 |
+grep "$title"                  |
+xargs                         > $tmp-title
+
+array=($(cat $tmp-title))      
+[ "${array[3]}" != "" ] && 
+echo ${array[@]}               |
+awk '{print $2,"-",$4}'        |
+bc               > $tmp-report
+
+[ "${array[3]}" = "" ] && 
+echo ${array[@]}               | 
+awk '{print $2}'  > $tmp-report
+
+echo "$title"    >>$tmp-report
+cat $tmp-report                |
+xargs                          |
+awk '{print "残高", $2, $1}'   >$reportdir/zandaka_$title.tsv 
+cat $reportdir/zandaka_$title.tsv 
+#cat $reportdir/tmp-total.tsv
